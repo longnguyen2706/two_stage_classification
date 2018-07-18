@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from sklearn import svm
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
@@ -10,9 +11,8 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support as score
 
-import load_CNN_features
-import seaborn as sns
-sns.set()
+# import seaborn as sns
+# sns.set()
 
 
 class SVM_CLASSIFIER:

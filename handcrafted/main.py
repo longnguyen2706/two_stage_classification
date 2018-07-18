@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from sklearn import svm
 import matplotlib.pyplot as plt
 from sklearn.decomposition import RandomizedPCA, PCA
@@ -14,13 +15,12 @@ from sklearn.metrics import precision_recall_fscore_support as score
 from sklearn.utils import Bunch
 import collections
 import load_CNN_features
-import seaborn as sns
+# import seaborn as sns
 
-from sift.sift_bow import SIFT_BOW
 from surf.surf_bow import SURF_BOW
 from svm_classifier import SVM_CLASSIFIER
 
-sns.set()
+# sns.set()
 
 IMAGE_DIR = '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG'
 FEATURE_DIR = '/mnt/6B7855B538947C4E/Dataset/features/off_the_shelf'

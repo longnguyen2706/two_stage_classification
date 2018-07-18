@@ -42,3 +42,29 @@ pip3 install -U scikit-learn
 # Run
 cd keras_fine_tuning/
 PYTHONPATH='.' python3 keras_impl/keras_finetune.py 
+
+
+
+# Structure
+## handcrafted 
+```commandline
+Train the SURF
+```
+
+## finetune
+```commandline
+Finetune the CNN
+```
+
+## offtheshelf
+```commandline
+Extract off the shelf features
+```
+
+## 2 stage module
+### classifier
+### trainer
+### tester
+### generate split data list
+### control model log
+ 

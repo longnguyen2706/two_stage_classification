@@ -1,23 +1,21 @@
 from __future__ import absolute_import
 
-from keras.models import load_model
+import collections
 import copy
-
-from sklearn.cross_validation import train_test_split
-
-from net.resnet152 import resnet152_model
-from keras_impl.utils import *
-from keras_impl.data_generator import DataGenerator
 
 from keras import Model, optimizers
 from keras.applications import InceptionV3
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
-
-from keras.layers import GlobalAveragePooling2D, Dense, Flatten, Dropout, AveragePooling2D
 from keras.callbacks import TensorBoard, EarlyStopping
 from keras.initializers import TruncatedNormal
+from keras.layers import GlobalAveragePooling2D, Dense, Flatten, Dropout, AveragePooling2D
+from keras.models import load_model
+from keras_impl.data_generator import DataGenerator
+from sklearn.cross_validation import train_test_split
 from sklearn.utils import Bunch
-import collections
+
+from keras_finetune.misc.utils import *
+from keras_finetune.net.resnet152 import resnet152_model
 
 GENERAL_SETTING = {
     'early_stopping_n_steps': 5,
@@ -38,75 +36,6 @@ GENERAL_SETTING = {
     # 'summaries_dir': summaries_directory
 }
 log_dir = '/mnt/6B7855B538947C4E/logdir/keras/'
-
-class MyDataset():
-    def __init__(self, directory, test_size, val_size):
-        self.directory = directory
-        self.filenames = None
-        self.labels = None
-        self.label_names = None
-        self.class_names = None
-        self.categories = None
-        self.test_size = test_size
-        self.val_size = val_size
-
-    def list_images(self):
-        self.labels = os.listdir(self.directory)
-        self.labels.sort()
-
-        files_and_labels = []
-        for label in self.labels:
-            for f in os.listdir(os.path.join(self.directory, label)):
-                files_and_labels.append((os.path.join(self.directory, label, f), label))
-
-        self.filenames, self.labels = zip(*files_and_labels)
-        self.filenames = list(self.filenames)
-        self.labels = list(self.labels)
-        self.label_names = copy.copy(self.labels)
-        unique_labels = list(set(self.labels))
-        unique_labels.sort()
-
-        label_to_int = {}
-        for i, label in enumerate(unique_labels):
-            label_to_int[label] = i
-
-        self.labels = [label_to_int[l] for l in self.labels]
-        self.class_names = unique_labels
-        self.categories = list(set(self.labels))
-        return
-
-    def get_data(self):
-        self.list_images()  # get image list
-
-        dataset = Bunch(
-            data=np.asarray(self.filenames),
-            label_names=np.asarray(self.label_names), labels=np.asarray(self.labels),
-            DESCR="Dataset"
-        )
-        print(dataset.data.shape)
-        # print(dataset.label_names)
-        train_files, test_files, train_labels, test_labels, train_label_names, test_label_names \
-            = train_test_split(dataset.data, dataset.labels, dataset.label_names, test_size=self.test_size)
-        train_files, val_files, train_labels, val_labels, train_label_names, val_label_names \
-            = train_test_split(train_files, train_labels, train_label_names, test_size=self.val_size)
-
-        print('train size: ', train_labels.shape)
-        self.data_split_report(train_label_names, 'train')
-        self.data_split_report(val_label_names,'val' )
-        self.data_split_report(test_label_names, 'test')
-
-        return train_files, train_labels, train_label_names, \
-               val_files, val_labels, val_label_names, \
-               test_files, test_labels, test_label_names, self.class_names
-
-    def data_split_report(self, label_names, set_name):
-        class_freq = collections.Counter(label_names)
-        print ("class freq for set %s "% set_name)
-        print('*********')
-        for key in sorted(class_freq):
-            print( "%s: %s" % (key, class_freq[key]))
-        print("-----------------------------------")
-
 
 def create_model_info(architecture):
     model_info = {}
