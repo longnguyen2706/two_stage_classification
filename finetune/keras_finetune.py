@@ -175,8 +175,8 @@ def train(image_dir, testing_percentage, validation_percentage, batch_size, arch
 
     model = set_model_trainable(model, num_base_layers)
 
-    # optimizer = optimizers.SGD(lr=0.1, decay=1e-6, momentum=0.0, nesterov=False)  # Inception
-    optimizer = optimizers.SGD(lr=0.1, decay=1e-6, momentum=0.0, nesterov=False)  # Inception-Resnet
+    optimizer = optimizers.SGD(lr=0.1, decay=0.0, momentum=0.0, nesterov=False)  # Inception
+    # optimizer = optimizers.SGD(lr=0.1, decay=1e-6, momentum=0.0, nesterov=False)  # Inception-Resnet
     # optimizer = optimizers.Adam(lr=0.1, beta_1=0.9, beta_2=0.99)
     # optimizer = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
 
@@ -233,30 +233,24 @@ def train(image_dir, testing_percentage, validation_percentage, batch_size, arch
     #
     score = model.evaluate_generator(test_generator, test_len)
     print("score", score)
-
-    score = model.evaluate_generator(test_generator, test_len)
-    print("score", score)
-
-    score = model.evaluate_generator(test_generator, test_len)
-    print("score", score)
-
-    score = model.evaluate_generator(test_generator, test_len*2)
-    print("score", score)
-
-    score = model.evaluate_generator(test_generator, test_len*5)
-    print("score", score)
-
     model.save('/home/long/keras_resnet.h5')
 
 def restore_model(model_path):
     model = load_model(model_path)
     print('Restored model from path ', model_path)
     print (model.summary())
+    return model
 
 
 def main(_):
-    train(GENERAL_SETTING['image_dir'], 20, 10, 8, 'inception_v3')
+    # train(GENERAL_SETTING['image_dir'], 20, 10, 8, 'inception_v3')
     # image_lists = get_image_lists(GENERAL_SETTING['image_dir'], 20, 10)
     # print(image_lists)
+    train_generator, validation_generator, test_generator = get_generators()
+    test_len = int(842 * 0.2)
+    model = restore_model('/home/long/keras_resnet.h5')
+
+    score = model.evaluate_generator(test_generator, test_len+1)
+    print("score", score)
 if __name__ == '__main__':
       tf.app.run(main=main)

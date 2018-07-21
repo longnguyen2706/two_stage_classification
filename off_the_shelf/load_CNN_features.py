@@ -3,7 +3,7 @@ import os
 import copy
 import numpy as np
 
-from split_data import load_pickle
+from split_data import load_pickle, print_split_report
 
 
 def read_feature_file(filepath):
@@ -38,7 +38,10 @@ def testing():
     print(data_pool['data']['29']['train_files'])
 
     split = data_pool['data']['29']
-    print (get_features(split['train_files'], split['train_label_names'], '/mnt/6B7855B538947C4E/Dataset/features/off_the_shelf'))
+    print_split_report('train', split['train_report'])
+    print_split_report('val', split['val_report'])
+    print_split_report('test', split['test_report'])
+    # print (get_features(split['train_files'], split['train_label_names'], '/mnt/6B7855B538947C4E/Dataset/features/off_the_shelf'))
 
 
 if __name__ == '__main__':

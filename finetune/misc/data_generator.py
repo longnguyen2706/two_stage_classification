@@ -3,52 +3,26 @@ from keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 import os
 import tensorflow as tf
-#
-# class DataGenerator(object):
-#   'Generates data for Keras'
-#   def __init__(self):
-#     return
-#
-#     def get_batch_images(sess, image_list, image_lists, batch_size, category,
-#                                                               image_dir, jpeg_data_tensor,
-#                                                               decoded_image_tensor):
-#
-#   def generate(self, sess, image_lists, batch_size, category,
-#                           image_dir, jpeg_data_tensor, decoded_image_tensor):
-#       # Infinite loop
-#       while 1:
-#           # Generate order of exploration of dataset
-#
-#           (data, ground_truth, _) = get_random_decoded_images(sess,
-#                                                               image_lists, batch_size, category,
-#                                                               image_dir, jpeg_data_tensor,
-#                                                               decoded_image_tensor)
-#           yield data, ground_truth
-#
-# import keras.utils.Sequence
 from tensorflow.python.platform import gfile
 
 from finetune.misc.utils import get_decoded_image, add_jpeg_decoding
-from off_the_shelf.load_CNN_features import get_features
 from split_data import load_pickle
 
-
+#TODO: fix the bug in shuffle=True
+# see https://github.com/keras-team/keras/issues/9707
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, sess, list_images, labels, num_classes, image_dir,  jpeg_data_tensor, decoded_image_tensor, batch_size, shuffle=True):
-        'Initialization'
-        # self.dim = dim
+    def __init__(self, sess, list_images, labels, num_classes, image_dir,  jpeg_data_tensor, decoded_image_tensor, batch_size, shuffle=False):
         self.sess = sess
         self.batch_size = batch_size
         self.labels = labels
         self.list_images = list_images
-        # self.n_channels = n_channels
         self.num_classes = num_classes
         self.shuffle = shuffle
         self.image_dir = image_dir
         self.jpeg_data_tensor = jpeg_data_tensor
         self.decoded_image_tensor = decoded_image_tensor
-        # self.on_epoch_end()
+        self.on_epoch_end()
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -61,7 +35,6 @@ class DataGenerator(keras.utils.Sequence):
         batch_y = self.labels[idx * self.batch_size:(idx + 1) * self.batch_size]
 
         # Generate data
-        # X, y = self.__data_generation(list_IDs_temp)
         # print(indexes)
         batch_data, batch_labels = self.__data_generation(batch_x, batch_y)
         return batch_data, batch_labels
