@@ -10,12 +10,13 @@ from keras.callbacks import TensorBoard, EarlyStopping
 from keras.initializers import TruncatedNormal
 from keras.layers import GlobalAveragePooling2D, Dense, Flatten, Dropout, AveragePooling2D
 from keras.models import load_model
-from keras_impl.data_generator import DataGenerator
+from finetune.misc.data_generator import DataGenerator
 from sklearn.cross_validation import train_test_split
 from sklearn.utils import Bunch
 
-from keras_finetune.misc.utils import *
-from keras_finetune.net.resnet152 import resnet152_model
+from misc.data_generator import get_generators
+from misc.utils import *
+from net.resnet152 import resnet152_model
 
 GENERAL_SETTING = {
     'early_stopping_n_steps': 5,
@@ -83,26 +84,27 @@ def get_image_lists(image_dir, testing_percentage, validation_percentage):
 
     return image_lists, class_count
 
-
-def get_generators(image_lists, model_info):
-    sess = tf.Session()
-    with sess.as_default():
-        # Set up the image decoding sub-graph.
-        jpeg_data_tensor, decoded_image_tensor = add_jpeg_decoding(
-            model_info['input_width'], model_info['input_height'],
-            model_info['input_depth'], model_info['input_mean'],
-            model_info['input_std'])
-
-
-        train_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'training',
-                                                   GENERAL_SETTING['image_dir'], jpeg_data_tensor, decoded_image_tensor)
-        validation_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'validation',
-                                                        GENERAL_SETTING['image_dir'], jpeg_data_tensor,
-                                                        decoded_image_tensor) #TODO: remove this general setting
-
-        test_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'testing',
-                                                  GENERAL_SETTING['image_dir'], jpeg_data_tensor, decoded_image_tensor)
-    return train_generator, validation_generator, test_generator
+#
+# def get_generators(image_lists, model_info):
+#     sess = tf.Session()
+#     with sess.as_default():
+#         # Set up the image decoding sub-graph.
+#         jpeg_data_tensor, decoded_image_tensor = add_jpeg_decoding(
+#             model_info['input_width'], model_info['input_height'],
+#             model_info['input_depth'], model_info['input_mean'],
+#             model_info['input_std'])
+#
+#         # training_generator = DataGenerator(partition['train'], labels, **params)
+#         # validation_generator = DataGenerator(partition['validation'], labels, **params)
+#         train_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'training',
+#                                                    GENERAL_SETTING['image_dir'], jpeg_data_tensor, decoded_image_tensor)
+#         validation_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'validation',
+#                                                         GENERAL_SETTING['image_dir'], jpeg_data_tensor,
+#                                                         decoded_image_tensor) #TODO: remove this general setting
+#
+#         test_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'testing',
+#                                                   GENERAL_SETTING['image_dir'], jpeg_data_tensor, decoded_image_tensor)
+#     return train_generator, validation_generator, test_generator
 
 
 def get_model(num_classes, architecture, model_info, dropout=0,  weights='imagenet'):
@@ -166,8 +168,8 @@ def train(image_dir, testing_percentage, validation_percentage, batch_size, arch
 
     # get data
     image_lists, num_classes = get_image_lists(image_dir, testing_percentage, validation_percentage)
-    train_generator, validation_generator, test_generator = get_generators(image_lists, model_info)
-
+    # train_generator, validation_generator, test_generator = get_generators(image_lists, model_info)
+    train_generator, validation_generator, test_generator = get_generators()
     # get model
     model, num_base_layers = get_model(num_classes, architecture, model_info)
 
@@ -185,8 +187,8 @@ def train(image_dir, testing_percentage, validation_percentage, batch_size, arch
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=5, verbose=0,
                                    mode='auto')
 
-    train_len = int(842 * 0.7)
-    validation_len = int(842 * 0.1) # TODO: fix this
+    train_len = int(842 * 0.6)
+    validation_len = int(842 * 0.2) # TODO: fix this
     test_len = int(842 * 0.2)
 
     '''
@@ -197,9 +199,9 @@ def train(image_dir, testing_percentage, validation_percentage, batch_size, arch
     model.fit_generator(
         train_generator,
         epochs=100,
-        steps_per_epoch=train_len // GENERAL_SETTING['batch_size']+1,
+        steps_per_epoch=train_len // 8+1,
         validation_data=validation_generator,
-        validation_steps=validation_len // GENERAL_SETTING['batch_size']+1,
+        validation_steps=validation_len // 16+1,
         callbacks=[tensorboard, early_stopping],
     )
 
@@ -252,10 +254,9 @@ def restore_model(model_path):
     print (model.summary())
 
 
-
 def main(_):
-    # train(GENERAL_SETTING['image_dir'], 20, 10, 8, 'resnet_v2')
-    image_lists = get_image_lists(GENERAL_SETTING['image_dir'], 20, 10)
-    print(image_lists)
+    train(GENERAL_SETTING['image_dir'], 20, 10, 8, 'inception_v3')
+    # image_lists = get_image_lists(GENERAL_SETTING['image_dir'], 20, 10)
+    # print(image_lists)
 if __name__ == '__main__':
       tf.app.run(main=main)

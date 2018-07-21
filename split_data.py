@@ -121,17 +121,17 @@ def gen_split_pool(dataset_name, dataset_dir, path, test_size=0.2, val_size=0.25
         data_i['data_name'] = dataset_name+'_'+str(i) +'_' + date
         data_i['train_files'] = train_files
         data_i['train_labels'] = train_labels
-        data_i['train_labels_name'] = train_label_names
+        data_i['train_label_names'] = train_label_names
         data_i['train_report'] = train_report
 
         data_i['test_files'] = test_files
         data_i['test_labels'] = test_labels
-        data_i['test_labels_name'] = test_label_names
+        data_i['test_label_names'] = test_label_names
         data_i['test_report'] = test_report
 
         data_i['val_files'] = val_files
         data_i['val_labels'] = val_labels
-        data_i['val_labels_name'] = val_label_names
+        data_i['val_label_names'] = val_label_names
         data_i['val_report'] = val_report
 
         data_i['class_names'] = class_names
@@ -145,27 +145,27 @@ def gen_split_pool(dataset_name, dataset_dir, path, test_size=0.2, val_size=0.25
     filepath = dump_pickle(pool, path)
     return pool, filepath
 
-def main():
+def testing():
 
-    # pool, filepath = gen_split_pool('Hela', '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', '/home/long/Desktop/')
-    # print (filepath)
-    #
-    # dict = load_pickle(filepath)
-    # # print (dict)
-    #
+    pool, filepath = gen_split_pool('Hela', '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', '/home/long/Desktop/')
+    print (filepath)
+
+    dict = load_pickle(filepath)
+    # print (dict)
+
     # print(dict == pool)
-    #
-    # split_1= pool['data']['0']
-    # train_report = split_1['train_report']
-    # print_split_report('train', train_report)
-    #
-    data_pool = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
-    print(data_pool['data']['29']['data_name'])
-    print (len(data_pool['data']['29']['train_files']))
-    print(data_pool['data']['29']['train_files'])
+
+    split_1= pool['data']['0']
+    train_report = split_1['train_report']
+    print_split_report('train', train_report)
+
+    # data_pool = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
+    # print(data_pool['data']['29']['data_name'])
+    # print (len(data_pool['data']['29']['train_files']))
+    # print(data_pool['data']['29']['train_files'])
 
 if __name__ == '__main__':
-    main()
+    testing()
 
 
 

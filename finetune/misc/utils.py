@@ -33,7 +33,7 @@ def save_to_csv(filename, data_arr):
         for row in data_arr:
             writer.writerow(row)
 
-
+# TODO: deprecated
 def create_image_lists(image_dir, testing_percentage, validation_percentage):
     """Builds a list of training images from the file system.
 

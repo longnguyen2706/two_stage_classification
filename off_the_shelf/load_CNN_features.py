@@ -3,6 +3,9 @@ import os
 import copy
 import numpy as np
 
+from split_data import load_pickle
+
+
 def read_feature_file(filepath):
     with open(filepath, 'r') as feature_file:
         feature_string = feature_file.read()
@@ -28,5 +31,16 @@ def get_features(list_images, label_names, feature_dir):
         features_list.append(features)
     return np.asarray(features_list)
 
+def testing():
+    data_pool = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
+    print(data_pool['data']['29']['data_name'])
+    print(len(data_pool['data']['29']['train_files']))
+    print(data_pool['data']['29']['train_files'])
 
+    split = data_pool['data']['29']
+    print (get_features(split['train_files'], split['train_label_names'], '/mnt/6B7855B538947C4E/Dataset/features/off_the_shelf'))
+
+
+if __name__ == '__main__':
+    testing()
 
