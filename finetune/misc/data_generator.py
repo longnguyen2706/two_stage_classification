@@ -6,7 +6,8 @@ import tensorflow as tf
 from tensorflow.python.platform import gfile
 
 from finetune.misc.utils import get_decoded_image, add_jpeg_decoding
-from split_data import load_pickle
+from utils import load_pickle
+
 
 #TODO: fix the bug in shuffle=True
 # see https://github.com/keras-team/keras/issues/9707
@@ -57,23 +58,7 @@ class DataGenerator(keras.utils.Sequence):
         return np.asarray(batch_images), keras.utils.to_categorical(batch_y, num_classes=self.num_classes)
 
 
-def get_generators():
-    model_info = {}
-    model_info['bottleneck_tensor_size'] = 2048
-    model_info['input_width'] = 299
-    model_info['input_height'] = 299
-    model_info['input_depth'] = 3
-    model_info['input_mean'] = 128
-    model_info['input_std'] = 128
-    model_info['pretrained_weights'] = None
-
-    data_pool = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
-    print(data_pool['data']['29']['data_name'])
-    print(len(data_pool['data']['29']['train_files']))
-    print(data_pool['data']['29']['train_files'])
-
-    split = data_pool['data']['29']
-
+def get_generators(model_info, split, image_dir, train_batch, test_batch):
     train_images = split['train_files']
     train_labels = split['train_labels']
 
@@ -83,7 +68,6 @@ def get_generators():
     test_images = split['test_files']
     test_labels = split['test_labels']
     num_classes = len(split['class_names'])
-    image_dir = '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG'
 
     sess = tf.Session()
     with sess.as_default():
@@ -92,12 +76,7 @@ def get_generators():
             model_info['input_width'], model_info['input_height'],
             model_info['input_depth'], model_info['input_mean'],
             model_info['input_std'])
-        train_generator  = DataGenerator(sess, train_images, train_labels, num_classes, image_dir, jpeg_data_tensor, decoded_image_tensor, 8)
-        val_generator = DataGenerator(sess, test_images, test_labels, num_classes, image_dir, jpeg_data_tensor, decoded_image_tensor, 16)
-        test_generator = DataGenerator(sess, val_images, val_labels, num_classes, image_dir, jpeg_data_tensor, decoded_image_tensor, 16)
-
+        train_generator  = DataGenerator(sess, train_images, train_labels, num_classes, image_dir, jpeg_data_tensor, decoded_image_tensor, train_batch)
+        val_generator = DataGenerator(sess, test_images, test_labels, num_classes, image_dir, jpeg_data_tensor, decoded_image_tensor, test_batch)
+        test_generator = DataGenerator(sess, val_images, val_labels, num_classes, image_dir, jpeg_data_tensor, decoded_image_tensor, test_batch)
     return train_generator, val_generator, test_generator
-
-
-if __name__ == "__main__":
-    get_generators()

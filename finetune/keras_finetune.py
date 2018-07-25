@@ -1,42 +1,18 @@
 from __future__ import absolute_import
 
-import collections
-import copy
-
-from keras import Model, optimizers
+from keras import Model, optimizers, metrics
 from keras.applications import InceptionV3
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.callbacks import TensorBoard, EarlyStopping
 from keras.initializers import TruncatedNormal
 from keras.layers import GlobalAveragePooling2D, Dense, Flatten, Dropout, AveragePooling2D
 from keras.models import load_model
-from finetune.misc.data_generator import DataGenerator
-from sklearn.cross_validation import train_test_split
-from sklearn.utils import Bunch
+from keras import backend as K
+import tensorflow as tf
 
 from misc.data_generator import get_generators
 from misc.utils import *
 from net.resnet152 import resnet152_model
-
-GENERAL_SETTING = {
-    'early_stopping_n_steps': 5,
-    'batch_size': 1,
-    'eval_step_interval': 100,
-    'flip_left_right': False,
-    'output_labels': '/tmp/output_labels.txt',
-    'random_brightness': 0,
-    'random_crop': 0,
-    'random_scale': 0,
-    'test_batch_size': -1,
-    'testing_percentage': 20,
-    'validation_percentage': 10,
-    'validation_batch_size': -1,
-    # 'csvlogfile': csv_log_directory,
-    'how_many_training_steps': 10000,
-    'image_dir': '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG/',
-    # 'summaries_dir': summaries_directory
-}
-log_dir = '/mnt/6B7855B538947C4E/logdir/keras/'
 
 def create_model_info(architecture):
     model_info = {}
@@ -69,45 +45,7 @@ def create_model_info(architecture):
 
     return model_info
 
-def get_image_lists(image_dir, testing_percentage, validation_percentage):
-    # Look at the folder structure, and create lists of all the images.
-    image_lists = create_image_lists(image_dir, testing_percentage, validation_percentage)
-    class_count = len(image_lists.keys())
-    if class_count == 0:
-        tf.logging.error('No valid folders of images found at ' + image_dir)
-        return -1
-    if class_count == 1:
-        tf.logging.error('Only one valid folder of images found at ' +
-                         image_dir +
-                         ' - multiple classes are needed for classification.')
-        return -1
-
-    return image_lists, class_count
-
-#
-# def get_generators(image_lists, model_info):
-#     sess = tf.Session()
-#     with sess.as_default():
-#         # Set up the image decoding sub-graph.
-#         jpeg_data_tensor, decoded_image_tensor = add_jpeg_decoding(
-#             model_info['input_width'], model_info['input_height'],
-#             model_info['input_depth'], model_info['input_mean'],
-#             model_info['input_std'])
-#
-#         # training_generator = DataGenerator(partition['train'], labels, **params)
-#         # validation_generator = DataGenerator(partition['validation'], labels, **params)
-#         train_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'training',
-#                                                    GENERAL_SETTING['image_dir'], jpeg_data_tensor, decoded_image_tensor)
-#         validation_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'validation',
-#                                                         GENERAL_SETTING['image_dir'], jpeg_data_tensor,
-#                                                         decoded_image_tensor) #TODO: remove this general setting
-#
-#         test_generator = DataGenerator().generate(sess, image_lists, GENERAL_SETTING['batch_size'], 'testing',
-#                                                   GENERAL_SETTING['image_dir'], jpeg_data_tensor, decoded_image_tensor)
-#     return train_generator, validation_generator, test_generator
-
-
-def get_model(num_classes, architecture, model_info, dropout=0,  weights='imagenet'):
+def declare_model(num_classes, architecture, model_info, dropout=0, weights='imagenet'):
     if architecture == 'inception_v3':
         base_model = InceptionV3(weights = weights, include_top=False)
 
@@ -145,112 +83,128 @@ def get_model(num_classes, architecture, model_info, dropout=0,  weights='imagen
 
         return model, num_base_layers
 
-
-def set_model_trainable(model, num_base_layers, layer_to_begin_finetune = -1):
-    if layer_to_begin_finetune == -1: # retrain all layers
+def set_model_trainable(model, num_base_layers, num_of_last_layer_finetune):
+    if num_of_last_layer_finetune == -1: # retrain all layers
         for layer in model.layers[:num_base_layers]:
             layer.trainable = True
 
-    elif layer_to_begin_finetune <= num_base_layers:
-        for layer in model.layers[:layer_to_begin_finetune]:
+    elif num_of_last_layer_finetune <= num_base_layers:
+        for layer in model.layers[:(num_base_layers-num_of_last_layer_finetune)]:
             layer.trainable = False
-        for layer in model.layers[layer_to_begin_finetune:]:
+        for layer in model.layers[(num_base_layers-num_of_last_layer_finetune):]:
             layer.trainable = True
 
     print(model.summary())
 
     return model
 
-def train(image_dir, testing_percentage, validation_percentage, batch_size, architecture):
+#TODO: save train log, return performance result
+#TODO: retrain some layers with small learning rate after finetuning -> can do it later by restoring and train few last layers
+#TODO: export to pb file
+# return val_score, test_score in dict form: test_score = {'acc': model accuracy, 'loss', model loss}
+def train(split, image_dir, architecture, hyper_params, log_path = None, save_model_path = None, restore_model_path = None,
+          train_batch=8, test_batch=16, num_last_layer_to_finetune=-1):
     tf.logging.set_verbosity(tf.logging.INFO)
 
     model_info = create_model_info(architecture)
 
-    # get data
-    image_lists, num_classes = get_image_lists(image_dir, testing_percentage, validation_percentage)
-    # train_generator, validation_generator, test_generator = get_generators(image_lists, model_info)
-    train_generator, validation_generator, test_generator = get_generators()
-    # get model
-    model, num_base_layers = get_model(num_classes, architecture, model_info)
+    train_generator, validation_generator, test_generator = get_generators(model_info, split, image_dir, train_batch, test_batch)
 
-    model = set_model_trainable(model, num_base_layers)
+    num_classes = len(split['class_names'])
+    train_len = len(split['train_files'])
+    validation_len = len(split['val_files'])
+    test_len = len(split['test_files'])
 
-    optimizer = optimizers.SGD(lr=0.1, decay=0.0, momentum=0.0, nesterov=False)  # Inception
+    # train the model from scratch or train the model from some point
+    if restore_model_path == None:
+        model, num_base_layers = declare_model(num_classes, architecture, model_info)
+        model = set_model_trainable(model, num_base_layers, num_last_layer_to_finetune)
+    else:
+        model, num_layers = restore_model(restore_model_path)
+        model = set_model_trainable(model, num_layers, num_last_layer_to_finetune)
+
+    print ('training the model with hyper params: ', hyper_params)
+    optimizer = optimizers.SGD(lr=hyper_params['lr'], decay=hyper_params['lr_decay'],
+                               momentum=hyper_params['momentum'], nesterov=hyper_params['nesretov'])  # Inception
     # optimizer = optimizers.SGD(lr=0.1, decay=1e-6, momentum=0.0, nesterov=False)  # Inception-Resnet
     # optimizer = optimizers.Adam(lr=0.1, beta_1=0.9, beta_2=0.99)
     # optimizer = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
 
-    model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy", optimizer=optimizer,
+                  metrics={'acc': 'accuracy','loss': 'crossentropy'}) # cal accuracy and loss of the model; result will be a dict
 
-    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=0, batch_size=GENERAL_SETTING['batch_size'],
+    tensorboard = TensorBoard(log_dir=log_path, histogram_freq=0, batch_size=train_batch,
                               write_graph=True, write_grads=False)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=5, verbose=0,
                                    mode='auto')
 
-    train_len = int(842 * 0.6)
-    validation_len = int(842 * 0.2) # TODO: fix this
-    test_len = int(842 * 0.2)
 
     '''
     Train the model 
     '''
     # note that keras 2 have problems with sample_per_epochs -> need to use sample per epoch
     # see https://github.com/keras-team/keras/issues/5818
+
+    # save tensorboard log if logdir is not None
     model.fit_generator(
         train_generator,
-        epochs=100,
-        steps_per_epoch=train_len // 8+1,
+        epochs=1,
+        steps_per_epoch=train_len // train_batch+1,
         validation_data=validation_generator,
-        validation_steps=validation_len // 16+1,
-        callbacks=[tensorboard, early_stopping],
+        validation_steps=validation_len // test_batch+1,
+        callbacks=[tensorboard, early_stopping if log_path is not None else early_stopping],
     )
 
-    # for i, layer in enumerate(base_model.layers):
-    #     print(i, layer.name)
-    #
-    # # we chose to train the top 2 inception blocks, i.e. we will freeze
-    # # the first 249 layers and unfreeze the rest:
-    # # for layer in model.layers[:249]:
-    # #     layer.trainable = False
-    # # for layer in model.layers[249:]:
-    # #     layer.trainable = True
-    #
-    # # we need to recompile the model for these modifications to take effect
-    # # we use SGD with a low learning rate
-    # from keras.optimizers import SGD
-    # optimizer = optimizers.Adam(lr=0.00001, beta_1=0.9, beta_2=0.99)
-    # # model.compile(optimizer=SGD(lr=0.0001, momentum=0.9), loss='categorical_crossentropy',metrics=['accuracy'])
-    #
-    # model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
-    # model.fit_generator(
-    #     train_generator,
-    #     epochs=100,
-    #     steps_per_epoch=train_len // GENERAL_SETTING['batch_size'],
-    #     validation_data=validation_generator,
-    #     validation_steps=validation_len // GENERAL_SETTING['batch_size'],
-    #     callbacks=[tensorboard]
-    # )
-    #
-    score = model.evaluate_generator(test_generator, test_len)
-    print("score", score)
-    model.save('/home/long/keras_resnet.h5')
+    #TODO: check batch size
+    val_score = model.evaluate_generator(validation_generator, validation_len // test_batch+1)
+    print('val_score: ', val_score)
+
+    test_score = model.evaluate_generator(test_generator, test_len// test_batch +1)
+    print('test score 1: ', test_score)
+    test_score = model.evaluate_generator(test_generator, test_len+1)
+    print("test score 2", test_score)
+
+    # save the model if dir is passed
+    if save_model_path is not None:
+        save_model(model, save_model_path)
+        export_pb(model, save_model_path)
+
+    return val_score, test_score
+
+def save_model(model, path):
+    try:
+        model.save(path)
+    except:
+        print('cannot save model')
+        pass
+    return
+
+def export_pb(model, path):
+    print('exporting model to pb file')
+    # print(model.output.op.name)
+    saver = tf.train.Saver()
+    saver.save(K.get_session(), path)
+    return
 
 def restore_model(model_path):
     model = load_model(model_path)
+    num_layers = len(model.layers)
     print('Restored model from path ', model_path)
     print (model.summary())
-    return model
+    return model, num_layers
 
 
 def main(_):
     # train(GENERAL_SETTING['image_dir'], 20, 10, 8, 'inception_v3')
     # image_lists = get_image_lists(GENERAL_SETTING['image_dir'], 20, 10)
     # print(image_lists)
-    train_generator, validation_generator, test_generator = get_generators()
+    # train_generator, validation_generator, test_generator = get_generators()
     test_len = int(842 * 0.2)
-    model = restore_model('/home/long/keras_resnet.h5')
+    model = restore_model('/home/long/keras_resnet_2.h5')
 
-    score = model.evaluate_generator(test_generator, test_len+1)
-    print("score", score)
+    # score = model.evaluate_generator(test_generator, test_len+1)
+    # print("score", score)
+    export_pb(model, '')
+
 if __name__ == '__main__':
       tf.app.run(main=main)

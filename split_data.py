@@ -1,14 +1,14 @@
+import collections
+import copy
 import datetime
-import pickle
 import os
 
-import copy
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.utils import Bunch
-import collections
 
-from utils import current_date
+from utils import current_date, dump_pickle, load_pickle
+
 
 class MyDataset():
     def __init__(self, directory, test_size, val_size):
@@ -74,18 +74,6 @@ class MyDataset():
         return class_freq
 
 
-def dump_pickle(dict, path):
-    filepath = path + '.pickle'
-    with open(filepath, 'wb') as handle:
-        pickle.dump(dict, handle)
-
-    return filepath
-
-def load_pickle(filepath):
-    with open(filepath, 'rb') as handle:
-        dict = pickle.load(handle)
-    return dict
-
 def print_split_report(set_name, class_freq):
     print ("class freq for set %s "% set_name)
     print('*********')
@@ -97,7 +85,7 @@ def print_split_report(set_name, class_freq):
 '''
     Since dict is unordered -> need to 
 '''
-def gen_split_pool(dataset_name, dataset_dir, path, test_size=0.2, val_size=0.25, pool_size=30):
+def gen_data_pool(dataset_name, dataset_dir, path, test_size=0.2, val_size=0.25, pool_size=30):
     now = datetime.datetime.now()
     date = current_date(now)
     pool = {}
@@ -147,7 +135,7 @@ def gen_split_pool(dataset_name, dataset_dir, path, test_size=0.2, val_size=0.25
 
 def testing():
 
-    pool, filepath = gen_split_pool('Hela', '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', '/home/long/Desktop/')
+    pool, filepath = gen_data_pool('Hela', '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', '/home/long/Desktop/')
     print (filepath)
 
     dict = load_pickle(filepath)

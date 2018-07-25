@@ -3,7 +3,8 @@ import os
 import copy
 import numpy as np
 
-from split_data import load_pickle, print_split_report
+from split_data import print_split_report
+from utils import load_pickle
 
 
 def read_feature_file(filepath):
