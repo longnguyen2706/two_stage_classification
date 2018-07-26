@@ -13,10 +13,13 @@ import tensorflow as tf
 from split_data import print_split_report
 from utils import current_date, current_time, load_pickle, dump_pickle
 
-learning_rates = [0.05, 0.1, 0.15, 0.2, 0.25]
-lr_decays = [0, 1e-3, 1e-6]
-momentums = [0.0] #[0.8, 0.9]
-nesterovs = [False] #[True, False]
+sgd_hyper_params = {
+    'learning_rates': [0.05, 0.1, 0.15, 0.2, 0.25],
+    'lr_decays': [0, 1e-3, 1e-6],
+    'momentums': [0.0], #[0.8, 0.9],
+    'nesterovs' : [False] #[True, False]
+}
+
 
 #TODO: flags - pickle dir, splits no to train, image_dir
 FLAGS = None
@@ -32,10 +35,10 @@ Returns:
 def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_path, train_batch, test_batch):
     results = {}
     # hyper tuning and record result
-    for lr in learning_rates:
-        for lr_decay in lr_decays:
-            for momentum in momentums:
-                for nesterov in nesterovs:
+    for lr in sgd_hyper_params['learning_rates']:
+        for lr_decay in sgd_hyper_params['lr_decays']:
+            for momentum in sgd_hyper_params['momentums']:
+                for nesterov in sgd_hyper_params['nesterovs']:
                     hyper_params = {'lr': lr, 'lr_decay': lr_decay, 'momentum': momentum,  'nesterov': nesterov }
                     val_score, test_score = train(pool_split, image_dir, architecture, hyper_params,
                                                   train_batch=train_batch, test_batch=test_batch)
@@ -104,8 +107,10 @@ def train_pools(_):
         results = train_single_pool(pool, FLAGS.image_dir, log_path, FLAGS.architecture,
                           save_model_path, FLAGS.train_batch, FLAGS.test_batch)
         model_info = {
+            'hyper_param_setting':sgd_hyper_params,
             'pool_idx': str(idx),
             'pool_name': pool['data_name'],
+            'time': time,
             'architecture': FLAGS.architecture,
             'train_batch': FLAGS.train_batch,
             'test_batch': FLAGS.test_batch,

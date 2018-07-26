@@ -13,6 +13,9 @@ import tensorflow as tf
 from misc.data_generator import get_generators
 from misc.utils import *
 from net.resnet152 import resnet152_model
+from split_data import print_split_report
+from utils import load_pickle
+
 
 def create_model_info(architecture):
     model_info = {}
@@ -125,7 +128,7 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
 
     print ('training the model with hyper params: ', hyper_params)
     optimizer = optimizers.SGD(lr=hyper_params['lr'], decay=hyper_params['lr_decay'],
-                               momentum=hyper_params['momentum'], nesterov=hyper_params['nesretov'])  # Inception
+                               momentum=hyper_params['momentum'], nesterov=hyper_params['nesterov'])  # Inception
     # optimizer = optimizers.SGD(lr=0.1, decay=1e-6, momentum=0.0, nesterov=False)  # Inception-Resnet
     # optimizer = optimizers.Adam(lr=0.1, beta_1=0.9, beta_2=0.99)
     # optimizer = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
@@ -133,32 +136,45 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
     model.compile(loss="categorical_crossentropy", optimizer=optimizer,
                   metrics={'acc': 'accuracy','loss': 'crossentropy'}) # cal accuracy and loss of the model; result will be a dict
 
-    tensorboard = TensorBoard(log_dir=log_path, histogram_freq=0, batch_size=train_batch,
-                              write_graph=True, write_grads=False)
-    early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=5, verbose=0,
-                                   mode='auto')
-
-
     '''
     Train the model 
     '''
     # note that keras 2 have problems with sample_per_epochs -> need to use sample per epoch
     # see https://github.com/keras-team/keras/issues/5818
-
+    early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=5, verbose=0,
+                                   mode='auto')
     # save tensorboard log if logdir is not None
-    model.fit_generator(
-        train_generator,
-        epochs=1,
-        steps_per_epoch=train_len // train_batch+1,
-        validation_data=validation_generator,
-        validation_steps=validation_len // test_batch+1,
-        callbacks=[tensorboard, early_stopping if log_path is not None else early_stopping],
-    )
 
-    #TODO: check batch size
+
+    if log_path is not None:
+        tensorboard = TensorBoard(log_dir=log_path, histogram_freq=0, batch_size=train_batch,
+                                  write_graph=True, write_grads=False)
+        model.fit_generator(
+            train_generator,
+            epochs=100,
+            steps_per_epoch=train_len // train_batch+1,
+            validation_data=validation_generator,
+            validation_steps=validation_len // test_batch+1,
+            callbacks=[tensorboard, early_stopping],
+    )
+    else:
+        model.fit_generator(
+            train_generator,
+            epochs=1,
+            steps_per_epoch=train_len // train_batch + 1,
+            validation_data=validation_generator,
+            validation_steps=validation_len // test_batch + 1,
+            callbacks=[early_stopping],
+        )
+
+
+    train_score = model.evaluate_generator(train_generator, train_len// train_batch+1)
+    print ('train_score: ', train_score)
+
     val_score = model.evaluate_generator(validation_generator, validation_len // test_batch+1)
     print('val_score: ', val_score)
 
+    #TODO: check batch size
     test_score = model.evaluate_generator(test_generator, test_len// test_batch +1)
     print('test score 1: ', test_score)
     test_score = model.evaluate_generator(test_generator, test_len+1)
@@ -195,16 +211,21 @@ def restore_model(model_path):
 
 
 def main(_):
-    # train(GENERAL_SETTING['image_dir'], 20, 10, 8, 'inception_v3')
-    # image_lists = get_image_lists(GENERAL_SETTING['image_dir'], 20, 10)
-    # print(image_lists)
-    # train_generator, validation_generator, test_generator = get_generators()
-    test_len = int(842 * 0.2)
-    model = restore_model('/home/long/keras_resnet_2.h5')
 
-    # score = model.evaluate_generator(test_generator, test_len+1)
-    # print("score", score)
-    export_pb(model, '')
+
+    data_pools = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
+    pool = data_pools['data']['0']
+    print(pool['data_name'])
+    print (len(pool['train_files']))
+    print_split_report('train', pool['train_report'])
+
+    train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'inception_resnet_v2',
+          {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_inception_resnet.h5')
+    # # model = restore_model('/home/long/keras_resnet_2.h5')
+    #
+    # # score = model.evaluate_generator(test_generator, test_len+1)
+    # # print("score", score)
+    # export_pb(model, '')
 
 if __name__ == '__main__':
       tf.app.run(main=main)
