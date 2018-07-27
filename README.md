@@ -86,30 +86,32 @@ cd two_stage_classification/
 ```commandline
 PYTHONPATH='.' python3 split_data.py
 ```
-### 
-
-```
-### Test the finetune only
+### Finetuning 
+#### Test the finetune only
 ```commandline
 PYTHONPATH='.' python3 finetune/keras_finetune.py 
 ```
 
-### Run the hyper params tuning
-#### Local 
+#### Run the hyper params tuning
+* The printout (log) during the training will be dump to file (>> means appends to file)
+* architecture: may be one of the following: 'inception_v3', 'inception_resnet_v2', 'resnet_v2'
+* start_pool, end_pool: the hyper params tuning will run for pool that have index from (start_pool to end_pool). For ex, start_pool = 0, end_pool=1 means pool 0 and 1 will be trained, and the resutl will be recorded to a single file. By default, there are 30 pools from pool 0 to pool 29.
+##### On Cloud
 ```commandline
 PYTHONPATH='.' python3 finetune/finetune_master.py \
     --pool_dir  '/home/ndlong95/Hela_split_30_2018-07-19.pickle' \
     --image_dir  '/home/ndlong95/Dataset/JPEG_data/Hela_JPEG' \
-    --architecture 'resnet_v2' \
+    --architecture 'inception_resnet_v2' \
     --start_pool  0 \
     --end_pool 1 \
     --log_dir '/home/ndlong95/finetune/log' \
     --save_model_dir  '/home/ndlong95/finetune/saved_models' \
     --result_dir '/home/ndlong95/finetune/results' \
-    --train_batch  8 \
-    --test_batch  16
+    --train_batch  16 \
+    --test_batch  32 >>/home/ndlong95/finetune_log.txt
 ```
-#### Cloud
+
+##### On Local 
 ```
 PYTHONPATH='.' python3 finetune/finetune_master.py \
     --pool_dir  '/home/long/Desktop/Hela_split_30_2018-07-19.pickle' \
@@ -121,23 +123,53 @@ PYTHONPATH='.' python3 finetune/finetune_master.py \
     --save_model_dir  '/home/long/finetune/saved_models' \
     --result_dir '/home/long/finetune/results' \
     --train_batch  8 \
-    --test_batch  16
+    --test_batch  16 >>/home/long/finetune_log.txt
 
 ```
+### Extract handcrafted features/off_the_shelf features:
+* You can just run the file if you are using pycharm. The file is not complete yet but the main functions are working.
 
-## Structure
-### handcrafted 
-```commandline
-Train the SURF
-```
+## Project Structure
+* **split_data.py:** create .pickle file that contains random train/val/test data split. By default, the file contains 30 random split.
+* **svm_classifier.py:** contains SVM_CLASSIFIER class which has train/test/save/load method for SVM model. Also, this class provide method to calculate confidence score of classification result, which is applicable to SVM linear classifier 
+* **main.py (deprecated):** should load CNN/finetune/handcrafted features, train SVM of each stage, train reject option and produce the final result
+### Finetune/
+* The finetune package is written with Keras 2. The structure is as follow:
+    * **keras_finetune.py** 
+        * contains necessary function to finetune a single net structure with single params setting, for a single data pool split
+        * the train() function return (acc, loss) score for train/val/test that will be used for hyper params optimization
+        * also contain restore trained model function, but got issue (see known issue) 
+    * **finetune_master.py**
+        * do hyper params optimization by repeatly call train() in keras_finetune.py with different params settings. The best params is chosen based on validation acc
+        * the script also take in different setting such as batch_size, log_dir ... to save the best model weights and tensorboard log to file. Also, it will save all the result to .pickle file
+    * **extract_finetune_features.py (uncompleted)**
+        * load the trained weights, freeze the model graph 
+        * take the data split, feed to the input layers and take the features before softmax layer. record to file
+        * dump features to .pickle
+    * **misc/**
+        * **data_generator.py:** return train/val/test generator needed by model.fit_generator during training
+        * **utils.py:** contains necessary functions for this finetune module
+    * **net/**
+        * **resnet152.py**: declare resnet152 model. keras.applications does not have resnet152 (only resnet50). This resnet also come with the weight that need to be specified. Please see create_model_info() in keras_finetune.py
+        * **custom_layers.py**: custom layers needed for resnet152 model
+    * **model/**
+        * should contain the model so that resnet152 model can be restored from the finetune weight
+   
+### off_the_shelf/
+* The extracted features (.txt file) need to be copied to the machine. This is the features obtained from the last paper
+* **extract_CNN_features.py:** read features from the file, return concatenation features
 
-### finetune
-```commandline
-Finetune the CNN
-```
+### handcrafted/
+* **bow/**
+    * **surf_bow.py:** contains SURF_BOW class that build extract SURF features, build vocab (BOW) from train images and return histogram of each train/val/test images that will be used in classification
+* **extract_bow_features.py:** extract features for pools
 
-### offtheshelf
-```commandline
-Extract off the shelf features
-```
+## Todo/Known issues
+### Known issues:
+* finetune/misc/data_generators.py cannot shuffle train/val/test batch: it is due to (data, label) are not correctly shuffled. However, without shuffling (passing shuffle=False), the model still perform very well
+* finetune/keras_finetune.py: the restore_model to restore trained model works well with 'inception_v3', 'inception_resnet_v2' architecture but cannot load 'resnet_v2' due to the custom layer in resnet model. It can be fixed by having resnet model declaration and just load the weight .h5 file instead of loading both .json and .h5 file
 
+### TODO:
+* extract features from finetune model
+* modify extract_CNN_features.py to extract features from pool 
+* modify main.py to work with pool, load features from cnn/handcrafted/finetune
