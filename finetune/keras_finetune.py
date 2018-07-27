@@ -6,7 +6,7 @@ from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.callbacks import TensorBoard, EarlyStopping
 from keras.initializers import TruncatedNormal
 from keras.layers import GlobalAveragePooling2D, Dense, Flatten, Dropout, AveragePooling2D
-from keras.models import load_model
+from keras.models import load_model, model_from_json
 from keras import backend as K
 import tensorflow as tf
 
@@ -133,8 +133,9 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
     # optimizer = optimizers.Adam(lr=0.1, beta_1=0.9, beta_2=0.99)
     # optimizer = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
 
+    #TODO: fix that
     model.compile(loss="categorical_crossentropy", optimizer=optimizer,
-                  metrics={'acc': 'accuracy','loss': 'crossentropy'}) # cal accuracy and loss of the model; result will be a dict
+                  metrics=['accuracy']) # cal accuracy and loss of the model; result will be a dict
 
     '''
     Train the model 
@@ -151,7 +152,7 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
                                   write_graph=True, write_grads=False)
         model.fit_generator(
             train_generator,
-            epochs=100,
+            epochs=1,
             steps_per_epoch=train_len // train_batch+1,
             validation_data=validation_generator,
             validation_steps=validation_len // test_batch+1,
@@ -169,30 +170,37 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
 
 
     train_score = model.evaluate_generator(train_generator, train_len// train_batch+1)
+    train_score={'loss': train_score[0], 'acc': train_score[1]}
     print ('train_score: ', train_score)
 
     val_score = model.evaluate_generator(validation_generator, validation_len // test_batch+1)
+    val_score ={'loss': val_score[0], 'acc': val_score[1]}
     print('val_score: ', val_score)
 
-    #TODO: check batch size
     test_score = model.evaluate_generator(test_generator, test_len// test_batch +1)
-    print('test score 1: ', test_score)
-    test_score = model.evaluate_generator(test_generator, test_len+1)
-    print("test score 2", test_score)
+    test_score={'loss': test_score[0], 'acc': test_score[1]}
+    print('test score: ', test_score)
 
     # save the model if dir is passed
     if save_model_path is not None:
         save_model(model, save_model_path)
-        export_pb(model, save_model_path)
+        # export_pb(model, save_model_path)
 
-    return val_score, test_score
+    return train_score, val_score, test_score
 
 def save_model(model, path):
-    try:
-        model.save(path)
-    except:
-        print('cannot save model')
-        pass
+    # serialize model to JSON
+    model_json = model.to_json()
+    with open(path+'.json', "w") as json_file:
+        json_file.write(model_json)
+    # serialize weights to HDF5
+    model.save_weights(path+'.h5')
+    print("Saved model to disk")
+    # try:
+    #     model.save(path+'.h5')
+    # except:
+    #     print('cannot save model')
+    #     pass
     return
 
 def export_pb(model, path):
@@ -200,18 +208,31 @@ def export_pb(model, path):
     # print(model.output.op.name)
     saver = tf.train.Saver()
     saver.save(K.get_session(), path)
+
+    # frozen_graph = freeze_session(K.get_session())
+    #                               # output_names=[out.op.name for out in model.outputs])
+    # tf.train.write_graph(frozen_graph, path, "t.pb", as_text=False)
     return
 
-def restore_model(model_path):
-    model = load_model(model_path)
+def restore_uncompiled_model(model_path):
+    # model = load_model(model_path)
+
+    # load json and create model
+    json_file = open(model_path+'.json', 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+
+    model = model_from_json(loaded_model_json)
+    # load weights into new model
+    model.load_weights(model_path+'.h5')
+    print("Loaded model from disk")
     num_layers = len(model.layers)
+
     print('Restored model from path ', model_path)
     print (model.summary())
     return model, num_layers
 
-
 def main(_):
-
 
     data_pools = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
     pool = data_pools['data']['0']
@@ -219,13 +240,42 @@ def main(_):
     print (len(pool['train_files']))
     print_split_report('train', pool['train_report'])
 
-    train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'inception_resnet_v2',
-          {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_inception_resnet.h5')
-    # # model = restore_model('/home/long/keras_resnet_2.h5')
     #
-    # # score = model.evaluate_generator(test_generator, test_len+1)
-    # # print("score", score)
-    # export_pb(model, '')
+    # train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'inception_resnet_v2',
+    #       {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_inception_resnet_3')
+
+    model, _ = restore_uncompiled_model('/home/long/keras_inception_resnet_3')
+    hyper_params = {'lr': 0.2, 'lr_decay': 0, 'momentum': 0, 'nesterov': False}
+    # compile model with appropriate setting
+    print('restore the model with hyper params: ', hyper_params)
+    optimizer = optimizers.SGD(lr=hyper_params['lr'], decay=hyper_params['lr_decay'],
+                               momentum=hyper_params['momentum'], nesterov=hyper_params['nesterov'])
+
+    model.compile(loss="categorical_crossentropy", optimizer=optimizer,
+                  metrics=['accuracy'])
+
+    model_info = create_model_info('inception_resnet_v2')
+
+    train_generator, validation_generator, test_generator = get_generators(model_info, pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 8,
+                                                                           16)
+    train_len = len(pool['train_files'])
+    validation_len = len(pool['val_files'])
+    test_len = len(pool['test_files'])
+    train_score = model.evaluate_generator(train_generator, train_len // 8 + 1)
+    train_score = {'loss': train_score[0], 'acc': train_score[1]}
+    print('train_score: ', train_score)
+
+    val_score = model.evaluate_generator(validation_generator, validation_len // 16 + 1)
+    val_score = {'loss': val_score[0], 'acc': val_score[1]}
+    print('val_score: ', val_score)
+
+    test_score = model.evaluate_generator(test_generator, test_len //16 + 1)
+    test_score = {'loss': test_score[0], 'acc': test_score[1]}
+    print('test score: ', test_score)
+
+    # export_pb(model, '/home/long/keras_inception_resnet')
+    # view_graphdef('/home/long/keras_inception_resnet/t.pb', '/tmp/')
+
 
 if __name__ == '__main__':
       tf.app.run(main=main)

@@ -27,7 +27,7 @@ FLAGS = None
 '''
 Train a single pool with hyper tuning
 The model will be trained multiple times with different params setting and record the result
-The best params then chosen based on test acc. 
+The best params then chosen based on val acc. 
 The model will be train again using this params. Model will be saved as .h5 and .pb file. Tensorboard log also be saved
 Returns:
     dict: results of all train with different hyper params and the final train result with best hyper params
@@ -40,10 +40,11 @@ def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_
             for momentum in sgd_hyper_params['momentums']:
                 for nesterov in sgd_hyper_params['nesterovs']:
                     hyper_params = {'lr': lr, 'lr_decay': lr_decay, 'momentum': momentum,  'nesterov': nesterov }
-                    val_score, test_score = train(pool_split, image_dir, architecture, hyper_params,
+                    train_score, val_score, test_score = train(pool_split, image_dir, architecture, hyper_params,
                                                   train_batch=train_batch, test_batch=test_batch)
                     result = {
                         'hyper_params': hyper_params,
+                        'train_score': train_score,
                         'test_score': test_score,
                         'val_score': val_score
                     }
@@ -53,24 +54,25 @@ def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_
     print('all results: ', results)
 
     # choosing the best params
-    test_accuracies = []
+    val_accuracies = []
     for result in results:
-        test_accuracy = result['test_score']['acc']
-        test_accuracies.append(test_accuracy)
+        test_accuracy = result['val_score']['acc']
+        val_accuracies.append(test_accuracy)
 
-    test_accuracies = np.asarray(test_accuracies)
-    best_test_acc_index = np.argmax(test_accuracies)
-    print ('best test acc: ', test_accuracies[best_test_acc_index])
+    val_accuracies = np.asarray(val_accuracies)
+    best_val_acc_index = np.argmax(val_accuracies)
+    print ('best val acc: ', val_accuracies[best_val_acc_index])
     # for debug
-    print ('best result: ', results[best_test_acc_index])
+    print ('best result: ', results[best_val_acc_index])
 
     # retrain the model with the best params and save the model to .h5 and .pb
-    best_hyper_params = results[best_test_acc_index]['hyper_params']
-    final_val_score, final_test_score = train(pool_split, image_dir, log_path, architecture, hyper_params,
+    best_hyper_params = results[best_val_acc_index]['hyper_params']
+    final_train_score, final_val_score, final_test_score = train(pool_split, image_dir, log_path, architecture, hyper_params,
                                               save_model_path= save_model_path, log_path=log_path,
                                               train_batch=train_batch, test_batch=test_batch)
     final_result = {
         'hyper_params': best_hyper_params,
+        'train_score': final_train_score,
         'test_score': final_test_score,
         'val_score': final_val_score
     }
