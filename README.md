@@ -45,7 +45,7 @@ PYTHONPATH='.' python3 finetune/keras_finetune.py
 PYTHONPATH='.' python3 finetune/finetune_master.py \
     --pool_dir  '/home/ndlong95/Hela_split_30_2018-07-19.pickle' \
     --image_dir  '/home/ndlong95/Dataset/JPEG_data/Hela_JPEG' \
-    --architecture 'resnetv2' \
+    --architecture 'resnet_v2' \
     --start_pool  0 \
     --end_pool 1 \
     --log_dir '/home/ndlong95/finetune/log' \

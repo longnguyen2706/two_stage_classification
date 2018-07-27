@@ -65,10 +65,10 @@ def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_
     best_val_acc_index = np.argmax(val_accuracies)
     print ('best val acc: ', val_accuracies[best_val_acc_index])
     # for debug
-    print ('best result: ', results[best_val_acc_index])
+    print ('best result: ', results['hyper_tuning_result'][best_val_acc_index])
 
     # retrain the model with the best params and save the model to .h5 and .pb
-    best_hyper_params = results[best_val_acc_index]['hyper_params']
+    best_hyper_params =results['hyper_tuning_result'][best_val_acc_index]['hyper_params']
     final_train_score, final_val_score, final_test_score = train(pool_split, image_dir, log_path, architecture, hyper_params,
                                               save_model_path= save_model_path, log_path=log_path,
                                               train_batch=train_batch, test_batch=test_batch)
