@@ -14,7 +14,7 @@ from split_data import print_split_report
 from utils import current_date, current_time, load_pickle, dump_pickle
 
 sgd_hyper_params = {
-    'learning_rates': [0.05, 0.1], #[0.05, 0.1, 0.15, 0.2, 0.25],
+    'learning_rates': [0.05], #[0.05, 0.1, 0.15, 0.2, 0.25],
     'lr_decays': [0],  #[0, 1e-3, 1e-6],
     'momentums': [0.0], #[0.8, 0.9],
     'nesterovs' : [False] #[True, False]

@@ -187,6 +187,8 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
         save_model(model, save_model_path)
         # export_pb(model, save_model_path)
 
+    # clear session and free memory
+    K.clear_session()
     return train_score, val_score, test_score
 
 def save_model(model, path):
