@@ -133,27 +133,21 @@ def gen_data_pool(dataset_name, dataset_dir, path, test_size=0.2, val_size=0.25,
     filepath = dump_pickle(pool, path)
     return pool, filepath
 
-def testing():
 
+def main():
+    # need to change dir to your appropriate dir
     pool, filepath = gen_data_pool('Hela', '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', '/home/long/Desktop/')
     print (filepath)
 
+    # test the result
     dict = load_pickle(filepath)
     # print (dict)
-
-    # print(dict == pool)
-
-    split_1= pool['data']['0']
+    split_1= dict['data']['0']
     train_report = split_1['train_report']
     print_split_report('train', train_report)
 
-    # data_pool = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
-    # print(data_pool['data']['29']['data_name'])
-    # print (len(data_pool['data']['29']['train_files']))
-    # print(data_pool['data']['29']['train_files'])
-
 if __name__ == '__main__':
-    testing()
+    main()
 
 
 

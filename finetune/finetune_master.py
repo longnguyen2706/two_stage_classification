@@ -93,7 +93,7 @@ def train_pools(_):
     now = datetime.datetime.now()
     time = current_time(now)
 
-    trained_models_info = {}
+    trained_models_info = []
 
     for idx in range(start_pool_idx, end_pool_idx+1):
         pool = pools['data'][str(idx)]
@@ -105,7 +105,7 @@ def train_pools(_):
         print('-----------------')
 
         name = pools['pool_name']+'_'+str(idx)
-        log_path = os.path.join(FLAGS.log_dir, name)
+        log_path = os.path.join(FLAGS.log_dir, name, FLAGS.architecture)
         save_model_path = os.path.join(FLAGS.save_model_dir, name+'_'+str(FLAGS.architecture))
 
         results = train_single_pool(pool, FLAGS.image_dir, log_path, FLAGS.architecture,

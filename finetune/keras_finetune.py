@@ -256,35 +256,35 @@ def main(_):
     '''
     Test train
     '''
-    #
-    # train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'inception_resnet_v2',
-    #       {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_inception_resnet_3')
+
+    train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'resnet_v2',
+          {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_resnet', train_batch=4, test_batch=8)
 
 
     '''
     Test restore and eval
     '''
-    hyper_params = {'lr': 0.2, 'lr_decay': 0, 'momentum': 0, 'nesterov': False}
-    model, _ = restore_model('/home/long/keras_inception_resnet_3', hyper_params)
-
-    model_info = create_model_info('inception_resnet_v2')
-
-    train_generator, validation_generator, test_generator = get_generators(model_info, pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 8,
-                                                                           16)
-    train_len = len(pool['train_files'])
-    validation_len = len(pool['val_files'])
-    test_len = len(pool['test_files'])
-    train_score = model.evaluate_generator(train_generator, train_len // 8 + 1)
-    train_score = {'loss': train_score[0], 'acc': train_score[1]}
-    print('train_score: ', train_score)
-
-    val_score = model.evaluate_generator(validation_generator, validation_len // 16 + 1)
-    val_score = {'loss': val_score[0], 'acc': val_score[1]}
-    print('val_score: ', val_score)
-
-    test_score = model.evaluate_generator(test_generator, test_len //16 + 1)
-    test_score = {'loss': test_score[0], 'acc': test_score[1]}
-    print('test score: ', test_score)
+    # hyper_params = {'lr': 0.2, 'lr_decay': 0, 'momentum': 0, 'nesterov': False}
+    # model, _ = restore_model('/home/long/keras_inception_resnet_3', hyper_params)
+    #
+    # model_info = create_model_info('inception_resnet_v2')
+    #
+    # train_generator, validation_generator, test_generator = get_generators(model_info, pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 8,
+    #                                                                        16)
+    # train_len = len(pool['train_files'])
+    # validation_len = len(pool['val_files'])
+    # test_len = len(pool['test_files'])
+    # train_score = model.evaluate_generator(train_generator, train_len // 8 + 1)
+    # train_score = {'loss': train_score[0], 'acc': train_score[1]}
+    # print('train_score: ', train_score)
+    #
+    # val_score = model.evaluate_generator(validation_generator, validation_len // 16 + 1)
+    # val_score = {'loss': val_score[0], 'acc': val_score[1]}
+    # print('val_score: ', val_score)
+    #
+    # test_score = model.evaluate_generator(test_generator, test_len //16 + 1)
+    # test_score = {'loss': test_score[0], 'acc': test_score[1]}
+    # print('test score: ', test_score)
 
     # export_pb(model, '/home/long/keras_inception_resnet')
     # view_graphdef('/home/long/keras_inception_resnet/t.pb', '/tmp/')
