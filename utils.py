@@ -10,7 +10,7 @@ def current_time(now):
 
 def dump_pickle(dict, path):
     filepath = path + '.pickle'
-    with open(filepath, 'wb') as handle:
+    with open(filepath, 'wxb') as handle:
         pickle.dump(dict, handle)
     return filepath
 
