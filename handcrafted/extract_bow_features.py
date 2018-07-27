@@ -4,7 +4,7 @@ from handcrafted.bow.surf_bow import SURF_BOW
 from split_data import print_split_report
 from utils import dump_pickle, load_pickle
 
-NUM_OF_WORDS = 5
+NUM_OF_WORDS = 1000
 def extract_BOW_features(train_files, val_files, test_files):
     surf_bow = SURF_BOW(num_of_words=NUM_OF_WORDS)
     surf_bow.build_vocab(train_files)

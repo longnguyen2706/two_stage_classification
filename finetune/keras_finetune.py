@@ -12,6 +12,7 @@ import tensorflow as tf
 
 from misc.data_generator import get_generators
 from misc.utils import *
+from model.basic_model import resnet_model
 from net.resnet152 import resnet152_model
 from split_data import print_split_report
 from utils import load_pickle
@@ -35,7 +36,7 @@ def create_model_info(architecture):
         model_info['input_depth'] = 3
         model_info['input_mean'] = 128
         model_info['input_std'] = 128
-        model_info['pretrained_weights'] = '/home/ndlong95/pretrained_model/keras/resnet152_weights_tf.h5'
+        model_info['pretrained_weights'] = '/mnt/6B7855B538947C4E/pretrained_model/keras/resnet152_weights_tf.h5'
 
     elif architecture == 'inception_resnet_v2':
         model_info['bottleneck_tensor_size'] = 1536
@@ -248,48 +249,51 @@ def main(_):
     '''
     prepare data
     '''
-    data_pools = load_pickle('/home/ndlong95/Hela_split_30_2018-07-19.pickle')
+    data_pools = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
     pool = data_pools['data']['0']
     print(pool['data_name'])
     print (len(pool['train_files']))
     print_split_report('train', pool['train_report'])
+    num_classes = len(pool['class_names'])
 
-    '''
-    Test train
-    '''
-
-    train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'resnet_v2',
-          {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_resnet', train_batch=4, test_batch=8)
-
+    # '''
+    # Test train
+    # '''
+    #
+    # train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'resnet_v2',
+    #       {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_resnet', train_batch=4, test_batch=8)
+    #
 
     '''
     Test restore and eval
     '''
 
-    # hyper_params = {'lr': 0.2, 'lr_decay': 0, 'momentum': 0, 'nesterov': False}
-    # model, _ = restore_model('/home/ndlong95/finetune/saved_models/Hela_split_30_2018-07-19_0_resnet_v2', hyper_params)
-    #
-    # model_info = create_model_info('resnet_v2')
-    #
-    # train_generator, validation_generator, test_generator = get_generators(model_info, pool, '/home/ndlong95/Dataset/JPEG_data/Hela_JPEG', 8,
-    #                                                                        16)
-    # train_len = len(pool['train_files'])
-    # validation_len = len(pool['val_files'])
-    # test_len = len(pool['test_files'])
-    # train_score = model.evaluate_generator(train_generator, train_len // 8 + 1)
-    # train_score = {'loss': train_score[0], 'acc': train_score[1]}
-    # print('train_score: ', train_score)
-    #
-    # val_score = model.evaluate_generator(validation_generator, validation_len // 16 + 1)
-    # val_score = {'loss': val_score[0], 'acc': val_score[1]}
-    # print('val_score: ', val_score)
-    #
-    # test_score = model.evaluate_generator(test_generator, test_len //16 + 1)
-    # test_score = {'loss': test_score[0], 'acc': test_score[1]}
-    # print('test score: ', test_score)
+    hyper_params = {'lr': 0.2, 'lr_decay': 0, 'momentum': 0, 'nesterov': False}
+    model_info = create_model_info('resnet_v2')
 
-    # export_pb(model, '/home/long/keras_inception_resnet')
-    # view_graphdef('/home/long/keras_inception_resnet/t.pb', '/tmp/')
+    # model, _ = restore_model('/home/ndlong95/finetune/saved_models/Hela_split_30_2018-07-19_0_resnet_v2', hyper_params)
+    model, _ = resnet_model(model_info, num_classes)
+    model.load_weights('/home/long/Desktop/Hela_split_30_2018-07-19_0_resnet_v2.h5', by_name=True)
+
+    train_generator, validation_generator, test_generator = get_generators(model_info, pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 8,
+                                                                           16)
+    train_len = len(pool['train_files'])
+    validation_len = len(pool['val_files'])
+    test_len = len(pool['test_files'])
+    train_score = model.evaluate_generator(train_generator, train_len // 8 + 1)
+    train_score = {'loss': train_score[0], 'acc': train_score[1]}
+    print('train_score: ', train_score)
+
+    val_score = model.evaluate_generator(validation_generator, validation_len // 16 + 1)
+    val_score = {'loss': val_score[0], 'acc': val_score[1]}
+    print('val_score: ', val_score)
+
+    test_score = model.evaluate_generator(test_generator, test_len //16 + 1)
+    test_score = {'loss': test_score[0], 'acc': test_score[1]}
+    print('test score: ', test_score)
+
+    export_pb(model, '/home/long/keras_inception_resnet')
+    view_graphdef('/home/long/keras_inception_resnet/t.pb', '/tmp/')
 
 
 if __name__ == '__main__':

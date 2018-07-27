@@ -150,6 +150,15 @@ def get_CNN_features(train_files, train_labels, train_label_names,
     return train_CNN_features, val_CNN_features, test_CNN_features
 
 
+def get_BOW_features(train_files, train_labels, train_label_names,
+                     val_files, val_labels, val_label_names,
+                     test_files, test_labels, test_label_names):
+    surf_bow = SURF_BOW(num_of_words=NUM_OF_WORDS)
+    surf_bow.build_vocab(train_files)
+    train_surf_features = surf_bow.extract_bow_hists(train_files)
+    val_surf_features = surf_bow.extract_bow_hists(val_files)
+    test_surf_features = surf_bow.extract_bow_hists(test_files)
+    return train_surf_features, val_surf_features, test_surf_features
 
 
 def find_best_t(cls1, cls2, dataset, CNN_features, surf_features, labels, class_names):

@@ -150,7 +150,7 @@ PYTHONPATH='.' python3 finetune/finetune_master.py \
         * **data_generator.py:** return train/val/test generator needed by model.fit_generator during training
         * **utils.py:** contains necessary functions for this finetune module
     * **net/**
-        * **resnet152.py**: declare resnet152 model. keras.applications does not have resnet152 (only resnet50). This resnet also come with the weight that need to be specified. Please see create_model_info() in keras_finetune.py
+        * **resnet152.py**: declare resnet152 model. keras.applications does not have resnet152 (only resnet50). **This resnet also come with the weight that need to be specified.** Please see create_model_info() in keras_finetune.py
         * **custom_layers.py**: custom layers needed for resnet152 model
     * **model/**
         * should contain the model so that resnet152 model can be restored from the finetune weight
@@ -173,3 +173,4 @@ PYTHONPATH='.' python3 finetune/finetune_master.py \
 * extract features from finetune model
 * modify extract_CNN_features.py to extract features from pool 
 * modify main.py to work with pool, load features from cnn/handcrafted/finetune
+* write function to train threshold t with respect to rejection rate alpha
