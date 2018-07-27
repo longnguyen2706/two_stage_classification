@@ -35,7 +35,7 @@ def create_model_info(architecture):
         model_info['input_depth'] = 3
         model_info['input_mean'] = 128
         model_info['input_std'] = 128
-        model_info['pretrained_weights'] = '/mnt/6B7855B538947C4E/pretrained_model/keras/resnet152_weights_tf.h5'
+        model_info['pretrained_weights'] = '/home/ndlong95//pretrained_model/keras/resnet152_weights_tf.h5'
 
     elif architecture == 'inception_resnet_v2':
         model_info['bottleneck_tensor_size'] = 1536
@@ -98,9 +98,8 @@ def set_model_trainable(model, num_base_layers, num_of_last_layer_finetune):
             layer.trainable = False
         for layer in model.layers[(num_base_layers-num_of_last_layer_finetune):]:
             layer.trainable = True
-
-    print(model.summary())
-
+    
+    #print(model.summary())
     return model
 
 #TODO: save train log, return performance result

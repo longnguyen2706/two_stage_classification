@@ -43,14 +43,14 @@ pip3 install -U scikit-learn
 cd two_stage_classification/
 PYTHONPATH='.' python3 finetune/keras_finetune.py 
 PYTHONPATH='.' python3 finetune/finetune_master.py \
-    --pool_dir  '/home/long/Desktop/Hela_split_30_2018-07-19.pickle' \
-    --image_dir  '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG' \
-    --architecture 'inception_resnet_v2' \
+    --pool_dir  '/home/ndlong95/Hela_split_30_2018-07-19.pickle' \
+    --image_dir  '/home/ndlong95/Dataset/JPEG_data/Hela_JPEG' \
+    --architecture 'resnetv2' \
     --start_pool  0 \
     --end_pool 1 \
-    --log_dir '/home/long/finetune/log' \
-    --save_model_dir  '/home/long/finetune/saved_models' \
-    --result_dir '/home/long/finetune/results' \
+    --log_dir '/home/ndlong95/finetune/log' \
+    --save_model_dir  '/home/ndlong95/finetune/saved_models' \
+    --result_dir '/home/ndlong95/finetune/results' \
     --train_batch  8 \
     --test_batch  16
     

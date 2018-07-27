@@ -14,8 +14,8 @@ from split_data import print_split_report
 from utils import current_date, current_time, load_pickle, dump_pickle
 
 sgd_hyper_params = {
-    'learning_rates': [0.05, 0.1, 0.15, 0.2, 0.25],
-    'lr_decays': [0, 1e-3, 1e-6],
+    'learning_rates': [0.05, 0.1], #[0.05, 0.1, 0.15, 0.2, 0.25],
+    'lr_decays': [0],  #[0, 1e-3, 1e-6],
     'momentums': [0.0], #[0.8, 0.9],
     'nesterovs' : [False] #[True, False]
 }
@@ -34,6 +34,7 @@ Returns:
 '''
 def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_path, train_batch, test_batch):
     results = {}
+    results['hyper_tuning_result'] = []
     print('architecture: ', architecture)
     # hyper tuning and record result
     for lr in sgd_hyper_params['learning_rates']:
@@ -56,9 +57,9 @@ def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_
 
     # choosing the best params
     val_accuracies = []
-    for result in results:
-        test_accuracy = result['val_score']['acc']
-        val_accuracies.append(test_accuracy)
+    for result in results['hyper_tuning_result']:
+        val_accuracy = result['val_score']['acc']
+        val_accuracies.append(val_accuracy)
 
     val_accuracies = np.asarray(val_accuracies)
     best_val_acc_index = np.argmax(val_accuracies)
