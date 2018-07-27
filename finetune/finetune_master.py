@@ -34,6 +34,7 @@ Returns:
 '''
 def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_path, train_batch, test_batch):
     results = {}
+    print('architecture: ', architecture)
     # hyper tuning and record result
     for lr in sgd_hyper_params['learning_rates']:
         for lr_decay in sgd_hyper_params['lr_decays']:
@@ -183,5 +184,5 @@ if __name__ == '__main__':
 
     FLAGS, unparsed = parser.parse_known_args()
     print(FLAGS)
-    tf.app.run(main=train_pools(), argv=[sys.argv[0]] + unparsed)
+    tf.app.run(main=train_pools, argv=[sys.argv[0]] + unparsed)
 

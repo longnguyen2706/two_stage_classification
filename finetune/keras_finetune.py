@@ -46,6 +46,8 @@ def create_model_info(architecture):
         model_info['input_std'] = 128
         model_info['pretrained_weights'] = None
 
+    else:
+        raise Exception
     return model_info
 
 def declare_model(num_classes, architecture, model_info, dropout=0, weights='imagenet'):
@@ -123,7 +125,7 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
         model, num_base_layers = declare_model(num_classes, architecture, model_info)
         model = set_model_trainable(model, num_base_layers, num_last_layer_to_finetune)
     else:
-        model, num_layers = restore_model(restore_model_path)
+        model, num_layers = restore_model(restore_model_path, hyper_params)
         model = set_model_trainable(model, num_layers, num_last_layer_to_finetune)
 
     print ('training the model with hyper params: ', hyper_params)
@@ -214,7 +216,7 @@ def export_pb(model, path):
     # tf.train.write_graph(frozen_graph, path, "t.pb", as_text=False)
     return
 
-def restore_uncompiled_model(model_path):
+def restore_model(model_path, hyper_params):
     # model = load_model(model_path)
 
     # load json and create model
@@ -228,24 +230,6 @@ def restore_uncompiled_model(model_path):
     print("Loaded model from disk")
     num_layers = len(model.layers)
 
-    print('Restored model from path ', model_path)
-    print (model.summary())
-    return model, num_layers
-
-def main(_):
-
-    data_pools = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
-    pool = data_pools['data']['0']
-    print(pool['data_name'])
-    print (len(pool['train_files']))
-    print_split_report('train', pool['train_report'])
-
-    #
-    # train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'inception_resnet_v2',
-    #       {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_inception_resnet_3')
-
-    model, _ = restore_uncompiled_model('/home/long/keras_inception_resnet_3')
-    hyper_params = {'lr': 0.2, 'lr_decay': 0, 'momentum': 0, 'nesterov': False}
     # compile model with appropriate setting
     print('restore the model with hyper params: ', hyper_params)
     optimizer = optimizers.SGD(lr=hyper_params['lr'], decay=hyper_params['lr_decay'],
@@ -253,6 +237,34 @@ def main(_):
 
     model.compile(loss="categorical_crossentropy", optimizer=optimizer,
                   metrics=['accuracy'])
+
+    print('Restored model from path ', model_path)
+    print (model.summary())
+    return model, num_layers
+
+def main(_):
+    '''
+    prepare data
+    '''
+    data_pools = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
+    pool = data_pools['data']['0']
+    print(pool['data_name'])
+    print (len(pool['train_files']))
+    print_split_report('train', pool['train_report'])
+
+    '''
+    Test train
+    '''
+    #
+    # train_score, val_score, test_score = train(pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 'inception_resnet_v2',
+    #       {'lr': 0.1, 'lr_decay': 0, 'momentum': 0,  'nesterov': False}, save_model_path='/home/long/keras_inception_resnet_3')
+
+
+    '''
+    Test restore and eval
+    '''
+    hyper_params = {'lr': 0.2, 'lr_decay': 0, 'momentum': 0, 'nesterov': False}
+    model, _ = restore_model('/home/long/keras_inception_resnet_3', hyper_params)
 
     model_info = create_model_info('inception_resnet_v2')
 

@@ -40,10 +40,20 @@ sudo pip3 install keras==2.1.5
 pip3 install -U scikit-learn
 ```
 # Run
-cd keras_fine_tuning/
-PYTHONPATH='.' python3 keras_impl/keras_finetune.py 
-
-
+cd two_stage_classification/
+PYTHONPATH='.' python3 finetune/keras_finetune.py 
+PYTHONPATH='.' python3 finetune/finetune_master.py \
+    --pool_dir  '/home/long/Desktop/Hela_split_30_2018-07-19.pickle' \
+    --image_dir  '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG' \
+    --architecture 'inception_resnet_v2' \
+    --start_pool  0 \
+    --end_pool 1 \
+    --log_dir '/home/long/finetune/log' \
+    --save_model_dir  '/home/long/finetune/saved_models' \
+    --result_dir '/home/long/finetune/results' \
+    --train_batch  8 \
+    --test_batch  16
+    
 
 # Structure
 ## handcrafted 
