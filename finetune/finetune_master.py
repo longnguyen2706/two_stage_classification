@@ -69,7 +69,7 @@ def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_
 
     # retrain the model with the best params and save the model to .h5 and .pb
     best_hyper_params =results['hyper_tuning_result'][best_val_acc_index]['hyper_params']
-    final_train_score, final_val_score, final_test_score = train(pool_split, image_dir, log_path, architecture, hyper_params,
+    final_train_score, final_val_score, final_test_score = train(pool_split, image_dir, architecture, hyper_params,
                                               save_model_path= save_model_path, log_path=log_path,
                                               train_batch=train_batch, test_batch=test_batch)
     final_result = {
