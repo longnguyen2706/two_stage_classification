@@ -1,3 +1,4 @@
+
 import pickle
 from datetime import datetime
 
@@ -10,7 +11,8 @@ def current_time(now):
 
 def dump_pickle(dict, path):
     filepath = path + '.pickle'
-    with open(filepath, 'wxb') as handle:
+    open(filepath) #create the file
+    with open(filepath, 'wb') as handle:
         pickle.dump(dict, handle)
     return filepath
 

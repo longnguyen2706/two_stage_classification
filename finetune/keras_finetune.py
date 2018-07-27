@@ -194,7 +194,8 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
 def save_model(model, path):
     # serialize model to JSON
     model_json = model.to_json()
-    with open(path+'.json', "wx") as json_file:
+    open(path+'.json', "x") # create the file
+    with open(path+'.json', "w") as json_file:
         json_file.write(model_json)
     # serialize weights to HDF5
     model.save_weights(path+'.h5')
