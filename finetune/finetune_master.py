@@ -14,10 +14,10 @@ from split_data import print_split_report
 from utils import current_date, current_time, load_pickle, dump_pickle
 
 sgd_hyper_params = {
-    'learning_rates': [0.05], #[0.05, 0.1, 0.15, 0.2, 0.25],
-    'lr_decays': [0],  #[0, 1e-3, 1e-6],
-    'momentums': [0.0], #[0.8, 0.9],
-    'nesterovs' : [False] #[True, False]
+    'learning_rates': [0.05, 0.1, 0.15, 0.2, 0.25],
+    'lr_decays': [0, 1e-3, 1e-6],
+    'momentums': [0.8, 0.9],
+    'nesterovs' : [True, False]
 }
 
 
@@ -92,8 +92,12 @@ def train_pools(_):
 
     now = datetime.datetime.now()
     time = current_time(now)
-
-    trained_models_info = {}
+    # make dir 
+    if not os.path.exists(FLAGS.save_model_dir):
+        os.makedirs(FLAGS.save_model_dir)
+    if not os.path.exists (FLAGS.result_dir):
+        os.makedirs(FLAGS.result_dir)
+    trained_models_info = []
 
     for idx in range(start_pool_idx, end_pool_idx+1):
         pool = pools['data'][str(idx)]
