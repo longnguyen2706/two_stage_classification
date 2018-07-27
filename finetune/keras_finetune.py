@@ -35,7 +35,7 @@ def create_model_info(architecture):
         model_info['input_depth'] = 3
         model_info['input_mean'] = 128
         model_info['input_std'] = 128
-        model_info['pretrained_weights'] = '/mnt/6B7855B538947C4E/pretrained_model/keras/resnet152_weights_tf.h5'
+        model_info['pretrained_weights'] = '/home/ndlong95/pretrained_model/keras/resnet152_weights_tf.h5'
 
     elif architecture == 'inception_resnet_v2':
         model_info['bottleneck_tensor_size'] = 1536
@@ -98,9 +98,8 @@ def set_model_trainable(model, num_base_layers, num_of_last_layer_finetune):
             layer.trainable = False
         for layer in model.layers[(num_base_layers-num_of_last_layer_finetune):]:
             layer.trainable = True
-
-    print(model.summary())
-
+    
+    #print(model.summary())
     return model
 
 #TODO: save train log, return performance result
@@ -154,7 +153,7 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
                                   write_graph=True, write_grads=False)
         model.fit_generator(
             train_generator,
-            epochs=1,
+            epochs=100,
             steps_per_epoch=train_len // train_batch+1,
             validation_data=validation_generator,
             validation_steps=validation_len // test_batch+1,
@@ -163,7 +162,7 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
     else:
         model.fit_generator(
             train_generator,
-            epochs=1,
+            epochs=100,
             steps_per_epoch=train_len // train_batch + 1,
             validation_data=validation_generator,
             validation_steps=validation_len // test_batch + 1,
@@ -188,6 +187,8 @@ def train(split, image_dir, architecture, hyper_params, log_path = None, save_mo
         save_model(model, save_model_path)
         # export_pb(model, save_model_path)
 
+    # clear session and free memory
+    K.clear_session()
     return train_score, val_score, test_score
 
 def save_model(model, path):
@@ -247,7 +248,7 @@ def main(_):
     '''
     prepare data
     '''
-    data_pools = load_pickle('/home/long/Desktop/Hela_split_30_2018-07-19.pickle')
+    data_pools = load_pickle('/home/ndlong95/Hela_split_30_2018-07-19.pickle')
     pool = data_pools['data']['0']
     print(pool['data_name'])
     print (len(pool['train_files']))
@@ -264,12 +265,13 @@ def main(_):
     '''
     Test restore and eval
     '''
+
     # hyper_params = {'lr': 0.2, 'lr_decay': 0, 'momentum': 0, 'nesterov': False}
-    # model, _ = restore_model('/home/long/keras_inception_resnet_3', hyper_params)
+    # model, _ = restore_model('/home/ndlong95/finetune/saved_models/Hela_split_30_2018-07-19_0_resnet_v2', hyper_params)
     #
-    # model_info = create_model_info('inception_resnet_v2')
+    # model_info = create_model_info('resnet_v2')
     #
-    # train_generator, validation_generator, test_generator = get_generators(model_info, pool, '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG', 8,
+    # train_generator, validation_generator, test_generator = get_generators(model_info, pool, '/home/ndlong95/Dataset/JPEG_data/Hela_JPEG', 8,
     #                                                                        16)
     # train_len = len(pool['train_files'])
     # validation_len = len(pool['val_files'])

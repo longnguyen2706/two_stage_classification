@@ -16,8 +16,8 @@ from utils import current_date, current_time, load_pickle, dump_pickle
 sgd_hyper_params = {
     'learning_rates': [0.05, 0.1, 0.15, 0.2, 0.25],
     'lr_decays': [0, 1e-3, 1e-6],
-    'momentums': [0.0], #[0.8, 0.9],
-    'nesterovs' : [False] #[True, False]
+    'momentums': [0.8, 0.9],
+    'nesterovs' : [True, False]
 }
 
 
@@ -65,11 +65,11 @@ def train_single_pool(pool_split, image_dir, log_path, architecture, save_model_
     best_val_acc_index = np.argmax(val_accuracies)
     print ('best val acc: ', val_accuracies[best_val_acc_index])
     # for debug
-    print ('best result: ', results[best_val_acc_index])
+    print ('best result: ', results['hyper_tuning_result'][best_val_acc_index])
 
     # retrain the model with the best params and save the model to .h5 and .pb
-    best_hyper_params = results[best_val_acc_index]['hyper_params']
-    final_train_score, final_val_score, final_test_score = train(pool_split, image_dir, log_path, architecture, hyper_params,
+    best_hyper_params =results['hyper_tuning_result'][best_val_acc_index]['hyper_params']
+    final_train_score, final_val_score, final_test_score = train(pool_split, image_dir, architecture, hyper_params,
                                               save_model_path= save_model_path, log_path=log_path,
                                               train_batch=train_batch, test_batch=test_batch)
     final_result = {
@@ -93,6 +93,10 @@ def train_pools(_):
     now = datetime.datetime.now()
     time = current_time(now)
 
+    if not os.path.exists(FLAGS.save_model_dir):
+        os.makedirs(FLAGS.save_model_dir)
+    if not os.path.exists (FLAGS.result_dir):
+        os.makedirs(FLAGS.result_dir)
     trained_models_info = []
 
     for idx in range(start_pool_idx, end_pool_idx+1):

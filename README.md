@@ -98,14 +98,14 @@ PYTHONPATH='.' python3 finetune/keras_finetune.py
 #### Local 
 ```commandline
 PYTHONPATH='.' python3 finetune/finetune_master.py \
-    --pool_dir  '/home/long/Desktop/Hela_split_30_2018-07-19.pickle' \
-    --image_dir  '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG' \
-    --architecture 'inception_resnet_v2' \
+    --pool_dir  '/home/ndlong95/Hela_split_30_2018-07-19.pickle' \
+    --image_dir  '/home/ndlong95/Dataset/JPEG_data/Hela_JPEG' \
+    --architecture 'resnet_v2' \
     --start_pool  0 \
     --end_pool 1 \
-    --log_dir '/home/long/finetune/log' \
-    --save_model_dir  '/home/long/finetune/saved_models' \
-    --result_dir '/home/long/finetune/results' \
+    --log_dir '/home/ndlong95/finetune/log' \
+    --save_model_dir  '/home/ndlong95/finetune/saved_models' \
+    --result_dir '/home/ndlong95/finetune/results' \
     --train_batch  8 \
     --test_batch  16
 ```
@@ -141,10 +141,3 @@ Finetune the CNN
 Extract off the shelf features
 ```
 
-### 2 stage module
-#### classifier
-#### trainer
-#### tester
-#### generate split data list
-#### control model log
- 
