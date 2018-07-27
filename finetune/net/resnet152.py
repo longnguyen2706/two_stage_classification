@@ -181,7 +181,7 @@ def resnet152_model(img_rows, img_cols,  channels, weights_path, num_classes=Non
     # sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
     # model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
 
-    print ('resnet152 summary: ', model.summary())
+    # print ('resnet152 summary: ', model.summary())
     return model
 
 if __name__ == '__main__':
