@@ -29,6 +29,7 @@ fusermount -u /home/ndlong95/gcloud-storage
 ### From computer terminal:
 gcloud compute scp --recurse  /home/duclong002/pretrained_model/keras/resnet152_weights_tf.h5 k80:~/
 gcloud compute scp --recurse /home/duclong002/Dataset/JPEG_data k80:~/
+gcloud compute scp --recurse /home/long/Desktop/Hela_split_30_2018-07-19.pickle k80:~/
 
 # Install dependencies
 ## Keras
@@ -53,7 +54,18 @@ PYTHONPATH='.' python3 finetune/finetune_master.py \
     --result_dir '/home/long/finetune/results' \
     --train_batch  8 \
     --test_batch  16
-    
+
+PYTHONPATH='.' python3 finetune/finetune_master.py \
+    --pool_dir  '/home/long/Desktop/Hela_split_30_2018-07-19.pickle' \
+    --image_dir  '/mnt/6B7855B538947C4E/Dataset/JPEG_data/Hela_JPEG' \
+    --architecture 'inception_resnet_v2' \
+    --start_pool  0 \
+    --end_pool 1 \
+    --log_dir '/home/long/finetune/log' \
+    --save_model_dir  '/home/long/finetune/saved_models' \
+    --result_dir '/home/long/finetune/results' \
+    --train_batch  8 \
+    --test_batch  16
 
 # Structure
 ## handcrafted 
